@@ -5,7 +5,8 @@ const states = {
     openCoding: 1,
     assistedGrouping: 2,
     verification: 3,
-    results: 4
+    results: 4,
+    documentation: 5 // attempt to add the NLPDocTool
 }
 
 export default states;

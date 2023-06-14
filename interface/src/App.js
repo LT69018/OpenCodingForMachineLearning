@@ -8,6 +8,7 @@ import OpenCoding from './Pages/OpenCoding/OpenCoding';
 import AssistedGrouping from './Pages/AssistedGrouping/AssistedGrouping';
 import Verification from './Pages/Verification/Verification';
 import Results from './Pages/Results/Results';
+import DocTool from './Pages/DocTool/DocTool'
 
 const fetch = require('node-fetch');
 
@@ -214,7 +215,7 @@ class App extends Component {
   }
 
   retrainModel = () => {
-    // this will be replaced with call to backend
+    // todo: this will be replaced with call to backend
     return true;
   }
 
@@ -280,6 +281,18 @@ class App extends Component {
         getDataWithParams = {this.getDataWithParams}
         getAccuracy = {this.getAccuracy}
         />;
+    } else if (page === states.documentation) {
+        // todo: JAT create the page for documentation
+        // passing updateState because that is how we'll go to different pages
+        // and the other html / flask helper methods
+        return <DocTool
+            updateState = {this.updateState}
+            getDataWithParams = {this.getDataWithParams}
+            getOptionID = {this.getOptionID}
+            postData = {this.postData}
+        />;
+        // I think we'll use postData to send parameters to NLPDocTool
+        // later consider how to pass data back and forth
     } else {
       // default value if state transitions ever fail
       return <div/>;
