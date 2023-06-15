@@ -28,6 +28,7 @@ class App extends Component {
       name: 'happydb',
       constants: null,
       verificationAccuracies: [],
+      prepDataDone: false,
     }
   }
 
@@ -93,14 +94,15 @@ class App extends Component {
    */
   async componentWillMount() {
     try {
-        // since I get an error talking about being unable to gather the data,
-        // I just comment this out
-    //   const response = await fetch('/data/prep_data');
-    //   // show 404 or 500 errors
-    //   if (!response.ok) {
-    //       throw Error(response.statusText);
-    //   }
-    //  await response.json();
+      const response = await fetch('/data/prep_data');
+      // show 404 or 500 errors
+      if (!response.ok) {
+          throw Error(response.statusText);
+      }
+      await response.json();
+      this.setState({
+        prepDataDone: true
+      });
     } catch (error) {
         console.log(error);
     }
@@ -239,6 +241,7 @@ class App extends Component {
   }
 
   getView(page) {
+    if (this.state.prepDataDone){
     if (page === states.introduction) {
       return <Introduction
         setOptionID = {this.setOptionID}
@@ -302,6 +305,8 @@ class App extends Component {
         // later consider how to pass data back and forth
     } else {
       // default value if state transitions ever fail
+      return <div/>;
+    }} else {
       return <div/>;
     }
   }
