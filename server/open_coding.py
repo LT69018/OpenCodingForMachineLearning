@@ -25,8 +25,8 @@ def test():
     return json.jsonify(response)
 
 # initialize endpoints to NLPDocTool
-@app.route('/documentation', methods=['GET'])
-def documentation_home():
+@app.route('/DocTool', methods=['GET'])
+def doc_tool_home():
     response = {
         "body": "Welcome to the DocTool Home Page!"
     }
@@ -35,8 +35,8 @@ def documentation_home():
     # but this is the bare bones attempt
     return json.jsonify(response)
 
-@app.route('/documentation/step1', methods=['GET'])
-def documentation_step1():
+@app.route('/DocTool/step1', methods=['GET'])
+def doc_tool_step1():
     # this doesn't work because we must have been to the home page first 
     # attempt 1: return redirect('https://docforml.github.io/NLPDocTool/')
     # then I realized I need to be doing this in the frontend
@@ -51,11 +51,14 @@ def prep_data():
     '''
     A request to grab all csv files, and load the information into the database
     '''
-    data_dict = parse_options_into_db()
-    find_pretrained_models(data_dict)
+    # I imagine this is where the trouble is coming from,
+    # since our SQLite database files aren't here yet, this won't work anyway.
+    
+    # data_dict = parse_options_into_db()
+    # find_pretrained_models(data_dict)
 
-    instantiate_tables(data_dict)
-    fill_tables(data_dict)
+    # instantiate_tables(data_dict)
+    # fill_tables(data_dict)
 
     response = {
         "body": "ok"

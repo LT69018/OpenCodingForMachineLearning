@@ -1,4 +1,7 @@
 import React, {Component} from 'react';
+// temporarily just allow the user to link right to the docTool page
+// for easy testing
+import { Routes, Route, Link } from 'react-router-dom';
 
 import './App.css';
 
@@ -62,6 +65,8 @@ class App extends Component {
    * @returns 
    */
   async getDataWithParams(url = '', params = {}) {
+    console.log(`In getDataWithParams(url=${url}, pararms=${params}`)
+    
     // Default options are marked with *
     let modifiedParams = Object.keys(params).map(key => encodeURIComponent(key) + "=" + encodeURIComponent(String(params[key])));
     let joinedParams = modifiedParams.join("&");
@@ -88,12 +93,14 @@ class App extends Component {
    */
   async componentWillMount() {
     try {
-      const response = await fetch('/data/prep_data');
-      // show 404 or 500 errors
-      if (!response.ok) {
-          throw Error(response.statusText);
-      }
-      await response.json();
+        // since I get an error talking about being unable to gather the data,
+        // I just comment this out
+    //   const response = await fetch('/data/prep_data');
+    //   // show 404 or 500 errors
+    //   if (!response.ok) {
+    //       throw Error(response.statusText);
+    //   }
+    //  await response.json();
     } catch (error) {
         console.log(error);
     }
@@ -282,7 +289,7 @@ class App extends Component {
         getAccuracy = {this.getAccuracy}
         />;
     } else if (page === states.documentation) {
-        // todo: JAT create the page for documentation
+        // todo: JAT create the page for DocTool and make sure consistent calling
         // passing updateState because that is how we'll go to different pages
         // and the other html / flask helper methods
         return <DocTool
