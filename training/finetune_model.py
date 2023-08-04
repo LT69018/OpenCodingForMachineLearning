@@ -5,7 +5,8 @@ import os
 
 import torch
 
-from transformers import DistilBertTokenizer, DistilBertModel, DistilBertConfig
+from transformers import DistilBertTokenizer, DistilBertModel, DistilBertConfig, logging
+logging.set_verbosity_error()
 
 # uncomment these imports for local running
 # from open_coding_utils import get_model
@@ -41,9 +42,15 @@ def open_coding_finetune_model(model_name, label_id_mappings, data_tuple, percen
         output_filename = f'open_coding_finetuned_{batch_size}_{num_epochs}_{percent_train}_{model_name}'
 
     # load pre-trained model or already fine-tuned model
-    config_path = model_dir + model_name + '/config.json'
-    model_path = model_dir + model_name + '/'
+    config_path = model_dir + model_name + '/model/config.json'
+    model_path = model_dir + model_name + '/model/pytorch_model.bin'
 
+    # print(f"@@@@@@@@@@@@@ DEBUG PATHS @@@@@@@@@@@@@\n"
+    #       f"\tconfig_path = {config_path}\n"
+    #       f"\tmodel_path = {model_path}\n"
+    #       f"\tCurrent directory = {os.getcwd()}"
+    #       "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+    
     model = get_model('distilbert')(num_labels, config_path, model_path)
     model.update_label_id_mapping(label_id_mappings)
     tokenizer = model.get_tokenizer()

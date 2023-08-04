@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import { Component } from 'react';
 
 import states from '../../Constants/States';
 // import progress from './../../Constants/States';
@@ -59,8 +59,18 @@ class OpenCoding extends Component {
         // console.log(`next possible: %s, section complete %s`, this.state.nextPossible, this.state.sectionComplete);
         if (event.key === ' ' && this.state.sectionComplete){
             this.onNextSubmit();
+        } else if (event.key == 'a') { // add a key shortcut for skipping
+            this.onSkipToNLPDocTool(); // got tired of seeing the results page boot
         }
     };
+
+    onSkipToResults = () => {
+        this.props.updateState(states.results);
+    }
+
+    onSkipToNLPDocTool = () => {
+        this.props.updateState(states.docStep1);
+    }
 
     /**
     * Callback function for our customized table object.
@@ -138,7 +148,7 @@ class OpenCoding extends Component {
                         </div>
                 </div>
                 <div style={{marginTop: '15px', width:'100%'}}>
-                    <div style={{display: 'flex', alignItems:'space-between'}}>
+                    <div style={{display: 'flex', alignItems:'space-between', xs:6}}>
                         <CallbackKeyEventButton
                             callBackFunc={this.handleNextKeyPress}
                             buttonAvailable={this.state.sectionComplete}
@@ -146,6 +156,16 @@ class OpenCoding extends Component {
                             text={'Next (space)'}
                         />
                     </div> 
+                    <div style={{alignItems:'end', backgroundColor: 'pink', xs:6}}>
+                        <CallbackKeyEventButton
+                            buttonAvailable={true}
+                            callBackFunc={this.handleNextKeyPress}
+                            // clickFunc={this.onSkipToResults}
+                            clickFunc={this.onSkipToNLPDocTool}
+                            text={'Skip to NLPDocTool [a]'}
+                            keyMatch={' '}
+                        />
+                    </div>
                 </div>
                 <div style={{ marginTop: '15px'}}>
                     <LinearProgress variant="determinate" value={progress}/>

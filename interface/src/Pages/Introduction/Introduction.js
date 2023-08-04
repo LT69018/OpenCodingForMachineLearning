@@ -1,10 +1,10 @@
-import React, {Component} from 'react';
+import { Component } from 'react';
 
 import states from './../../Constants/States';
 
 import LinearProgress from '@material-ui/core/LinearProgress';
 import CallbackKeyEventButton from '../../Custom/CallbackKeyEventButton';
-import FixedSlider from './FixedSlider';
+import FixedSlider from '../../Custom/FixedSlider';
 import PretrainingModal from './PretrainingModal';
 
 import DataOptions from './DataOptions';

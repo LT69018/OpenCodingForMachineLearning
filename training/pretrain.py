@@ -4,7 +4,8 @@ import math
 import os
 
 import numpy as np
-from transformers import Trainer, TrainingArguments
+from transformers import Trainer, TrainingArguments, logging
+logging.set_verbosity_error()
 import torch
 
 # import style required by FLASK
@@ -142,6 +143,7 @@ def mlm_pretrain(model, tokenizer, filename, output_path_filename, mask_percenta
         per_device_train_batch_size=batch_size,
         num_train_epochs=num_epochs,
         # save_total_limit=1, # only save best checkpoint; remove disk quota
+        use_mps_device=True # fixing `Placeholder storage has not been allocated on MPS device!`
     )
 
     trainer = Trainer(

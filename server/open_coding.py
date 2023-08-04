@@ -7,7 +7,7 @@ from flask import redirect # JAT added this to try and link to NLPDocTool
 
 app = Flask(__name__)
 
-from process_data import parse_options_into_db, find_pretrained_models, select_some, save_to_csv, write_to_csv, write_to_csv_annotations
+from process_data import parse_options_into_db, find_pretrained_models, select_some, save_to_csv, write_to_csv, write_to_csv_annotations, load_csv_to_json_object, get_label_counts, sort_label_counts, tableify_label_statistics, parse_annotation_data, get_summary_rows, custom_save_to_csv
 from database import instantiate_tables, fill_tables, get_options, get_option, get_option_data, set_annotation_data, get_annotation_data, create_constants, set_constants, get_constant, add_labels, get_label_set, get_table_rows_full, get_table_rows, get_labeled_data, get_unlabeled_data, get_label_set_data, create_labels
 
 from training.finetune_model import open_coding_finetune_model
@@ -15,7 +15,15 @@ from training.finetune_model import open_coding_finetune_model
 from training.predict_labels import call_predict
 from training.generate_pretrained_model import call_pretrain_model_distilbert_local
 
+from tqdm import tqdm as tq
+import os
 
+DO_FINETUNING_BOOL = True
+# usage: we're just doing a demo and relabeling everything would be pointless
+DO_LABELING_BOOL = False 
+
+# normal constants
+GROUP_CSV_FIELDNAMES = ["id", "text", "annotation", "true_label"]
 
 @app.route('/', methods=['GET'])
 def test():
@@ -157,10 +165,7 @@ def get_annotations():
     option_id = request.args.get("id")
     annotations = get_annotation_data(option_id)
 
-    parsed_options = []
-    for id in annotations:
-        parsed_options.append({"id": int(id), "text": annotations[id]["text"], "annotation": annotations[id]["annotation"]})
-
+    parsed_options = parse_annotation_data(annotations)
     response = {
         "rows": parsed_options
     }
@@ -343,37 +348,148 @@ def get_results():
         label_id_mappings['label_to_id'][label] = id
 
     # finetune the model, return output filepath
-    output_name = open_coding_finetune_model(model_name, label_id_mappings, ([d['text'] for d in data_rows], [d['label'] for d in data_rows]), percent_train, batch_size, num_epochs)
+    # ^ original
+    # Now, i'm commenting out the finetuning.
+    if not DO_FINETUNING_BOOL:
+        output_name = f'open_coding_finetuned_{batch_size}_{num_epochs}_{percent_train}_{model_name}'
+    else:
+        output_name = open_coding_finetune_model(model_name, label_id_mappings, 
+                                                 ([d['text'] for d in data_rows], [d['label'] for d in data_rows]), 
+                                                 percent_train, batch_size, num_epochs)
+    
     name = get_option(option_id).replace(' ', '_')
 
-    write_to_csv(kerb + '_labeled_' + name, data_rows)
+    labels_csv_file_name = kerb + '_labeled_' + name
+    do_labeling_bool = DO_LABELING_BOOL
+    if not do_labeling_bool:
+        labels_csv_file_path = './../results/' + labels_csv_file_name + '.csv'
+        if not os.path.exists(labels_csv_file_path):
+            print(f"Ignoring debugging rule DO_LABELING_BOOL since output file ({labels_csv_file_path}) does not exist")
+            do_labeling_bool = True
 
-    # gather all unlabeled texts, and predict
-    unlabeled_data = get_unlabeled_data(option_id)
+    if do_labeling_bool:
+        write_to_csv(kerb + '_labeled_' + name, data_rows)
 
-    # loop until all data has been written
-    while unlabeled_data != []:
-    
-        some_selected_data = select_some(unlabeled_data, 0, 200)
-        predictions = call_predict(some_selected_data, output_name, label_id_mappings)
-
-        full_labels = [{'id': pred['id'], 'true_label': pred['label'], 'predicted_label': pred['label']} for pred in predictions]
-
-        # add all labels into the database and incrementally update results file
-        add_labels(option_id, full_labels)
-        write_to_csv(kerb + '_labeled_' + name, predictions, False)
-
+        # gather all unlabeled texts, and predict
         unlabeled_data = get_unlabeled_data(option_id)
+        initial_unlabeled_data_size = len(unlabeled_data)
+        batch_size = 200
+        # loop until all data has been written
+        # while unlabeled_data != []:
+        print("Labeling data!")
+        for i in tq(range(0, initial_unlabeled_data_size, batch_size)):
+            if unlabeled_data == []:
+                break
+            
+            some_selected_data = select_some(unlabeled_data, 0, batch_size)
+            predictions = call_predict(some_selected_data, output_name, label_id_mappings)
 
-    # also save annotations
-    annotations = get_annotation_data(option_id)
-    
-    write_to_csv_annotations(kerb + '_annotations_' + name, annotations)
+            full_labels = [{'id': pred['id'], 'true_label': pred['label'], 'predicted_label': pred['label']} for pred in predictions]
+
+            # add all labels into the database and incrementally update results file
+            add_labels(option_id, full_labels)
+            write_to_csv(kerb + '_labeled_' + name, predictions, False)
+
+            unlabeled_data = get_unlabeled_data(option_id)
+
+        # also save annotations
+        annotations = get_annotation_data(option_id)
+        
+        write_to_csv_annotations(kerb + '_annotations_' + name, annotations)
 
     response = {
         "saved": kerb + '_labeled_' + name,
         "model name": output_name,
     }
+
+    add_options(response)
+    return json.jsonify(response)
+
+
+@app.route('/data/get_final_labels_and_summaries', methods=['GET'])
+def get_final_labels_and_summaries():
+    """
+    Here I hope to extract the labels 
+    that were saved from get_results in a csv file
+    To send to the front end to be displayed.
+    
+    todo: even consider if we want to do the data processing here 
+    instead of in the frontend
+    """
+    option_id = request.args.get("id")
+    
+    results_path = '../results/'
+    kerb = 'final'
+    name = get_option(option_id).replace(' ', '_')
+    # accidentally forgot csv file extension last time
+    result_labels_path = results_path + kerb + '_labeled_' + name + '.csv'
+    user_groups_path = results_path + 'groups.csv'
+    
+    response = {
+        "final_labels": [],
+        "model_summary_rows": [],  # will be ready and formatted to be displayed
+        
+        "user_annotations": [],
+        "user_summary_rows": [],
+        
+        "user_groups": [],
+        "user_group_summary_rows": []
+    }
+
+    try:
+        # gather all the labels that were evaluated and saved earlier -> summarize
+        response["final_labels"] = load_csv_to_json_object(result_labels_path)
+        response["model_summary_rows"] = get_summary_rows(response["final_labels"])
+        
+        # gather the users annotations and summarize that as well
+        annotations = get_annotation_data(option_id)
+        response["user_annotations"] = parse_annotation_data(annotations)
+        response["user_summary_rows"] = get_summary_rows(response["user_annotations"])
+        
+        # fix to the json `TypeError: '<' not supported between instances of 'NoneType' and 'str'`
+        # was that I forgot to specify the correct fieldnames here 
+        response["user_groups"] = load_csv_to_json_object(user_groups_path, GROUP_CSV_FIELDNAMES)
+        # note groups are saved as true label
+        # resolved why the labels were being displayed instead of the groups,
+        # i didn't pass the key_to_check to the function it needed to be passed to in process_data 
+        response["user_group_summary_rows"] = get_summary_rows(response["user_groups"], key_to_check="true_label")
+         
+    except Exception as e:
+        response["ok"] = False
+        response["statusText"] = str(e)
+        # print("IN EXCEPT ON GET_SUMMARY_STATS_AND_LABELS")
+        # print(f"response: {response}")
+        return json.jsonify(response)
+    
+    # print("in *SUCCESS* on GET_SUMMARY_STATS_AND_LABELS")
+    # print(f"response: {response}")
+    add_options(response)
+    return json.jsonify(response)
+
+
+@app.route("/data/save_groups", methods=['POST'])
+def save_groups():
+    option_id = request.args.get("id")
+    response = {}
+    
+    content_type = request.headers.get('Content-Type')
+    if (content_type == 'application/json'):
+        try:
+            json_data = request.get_json()
+            group_outputs_file_name = "groups"
+
+            rows = json_data['rows']
+            # todo: with groups, and how we want to display final results table
+            # maybe add a function to match up the result labels with these that have been grouped and annotated?
+            custom_save_to_csv(group_outputs_file_name, rows, GROUP_CSV_FIELDNAMES)
+            
+            response['msg'] = 'Success'
+        except Exception as e:
+            response['msg'] = str(e)
+            response['ok'] = False
+    else:
+        response['msg'] = 'Content-Type not supported!'
+        response['ok'] = False
 
     add_options(response)
     return json.jsonify(response)
