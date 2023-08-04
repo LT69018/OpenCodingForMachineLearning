@@ -14,6 +14,8 @@ def create_connection(db_file):
     :param db_file: database file
     :return: Connection object or None
     """
+    # no file has been able to connect the morning of Wed. 6/14
+    # so I'm going to trace who is calling this file and then comment that out
     conn = None
     try:
         conn = sqlite3.connect(db_file)

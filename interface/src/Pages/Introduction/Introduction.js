@@ -50,31 +50,31 @@ class Introduction extends Component {
     */
     async componentDidMount() {
         try {
-            const response = await fetch('/data/get_all_data_options');
+            // const response = await fetch('/data/get_all_data_options');
             
-            if (!response.ok) {
-                throw Error(response.statusText);
-            }
+            // if (!response.ok) {
+            //     throw Error(response.statusText);
+            // }
 
-            const data = await response.json();
+            // const data = await response.json();
 
-            let optionsFull = data.options;
+            // let optionsFull = data.options;
 
-            let formattedOptionsFull = [];
+            // let formattedOptionsFull = [];
 
-            for (let option_id in optionsFull) {
-                let models = [];
+            // for (let option_id in optionsFull) {
+            //     let models = [];
                 
-                for (let model in optionsFull[option_id].models){
-                    models.push({model: optionsFull[option_id].models[model]})
-                }
+            //     for (let model in optionsFull[option_id].models){
+            //         models.push({model: optionsFull[option_id].models[model]})
+            //     }
 
-                formattedOptionsFull.push({id: option_id, text: optionsFull[option_id].name, models: models});
-            }
+            //     formattedOptionsFull.push({id: option_id, text: optionsFull[option_id].name, models: models});
+            // }
 
-            this.setState({
-                dataOptions: formattedOptionsFull
-            });
+            // this.setState({
+            //     dataOptions: formattedOptionsFull
+            // });
         } catch (error) {
             console.log(error);
         }

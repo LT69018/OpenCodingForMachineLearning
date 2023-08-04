@@ -1,8 +1,9 @@
-// todo: consolidate / decide if we'll use routes or not.
 
+// todo: consolidate / decide if we'll use routes or not.
 import { Component } from "react";
 
 // import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 
 import "./App.css";
 
@@ -13,6 +14,7 @@ import AssistedGrouping from "./Pages/AssistedGrouping/AssistedGrouping";
 import Training from "./Pages/Training/Training";
 import Results from "./Pages/Results/Results";
 
+
 // NLPDocTool Pages
 import Step1 from "./Pages/NLPDocTool/Step1";
 import Step2 from "./Pages/NLPDocTool/Step2";
@@ -22,6 +24,7 @@ import Step5 from "./Pages/NLPDocTool/Step5";
 // note to self: react doesn't like lowercase component names
 import DocResults from "./Pages/NLPDocTool/DocResults";
 import ViewDoc from "./Pages/NLPDocTool/ViewDoc";
+
 
 const fetch = require("node-fetch");
 
@@ -421,6 +424,7 @@ class App extends Component {
             postData={this.postData}
         />
     }
+
 
 
 	getView(page) {
